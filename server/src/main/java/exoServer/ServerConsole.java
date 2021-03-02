@@ -6,29 +6,26 @@ import java.util.Scanner;
 
 public class ServerConsole implements Runnable {
 
-    private static boolean isActive;
     private Scanner in = new Scanner(System.in);
     private List<ClientHandler> clients;
+    private Server server;
 
-    public ServerConsole(List<ClientHandler> clients) {
+    public ServerConsole(List<ClientHandler> clients, Server server) {
         this.clients = clients;
+        this.server = server;
     }
 
     @Override
     public void run() {
-        isActive = true;
-        while (isActive) {
+        while (server.isServerActive()) {
             String command = in.nextLine();
             if (command.isEmpty()) {
                 continue;
             }
-            if (command.startsWith("/stop")) {
-                isActive = false;
-                break;
-            }
-            if(!clients.isEmpty()){
-            sendMessage(command);
-        }else System.out.println("Некому отправлять месседж");}
+            if (!clients.isEmpty()) {
+                sendMessage(command);
+            } else System.out.println("Некому отправлять месседж");
+        }
     }
 
     public void sendMessage(String message) {
@@ -36,12 +33,8 @@ public class ServerConsole implements Runnable {
             try {
                 client.getOut().writeUTF(message);
             } catch (IOException e) {
-                e.printStackTrace();
+                System.out.println("Потеряно соединение с клиентом");
             }
         }
-    }
-
-    public static boolean isServerActive() {
-        return isActive;
     }
 }

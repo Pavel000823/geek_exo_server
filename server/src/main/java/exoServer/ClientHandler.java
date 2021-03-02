@@ -11,9 +11,11 @@ public class ClientHandler implements Runnable {
     private final Socket clientSocket;
     private DataInputStream in;
     private DataOutputStream out;
+    private Server server;
 
-    public ClientHandler(Socket clientSocket) {
+    public ClientHandler(Socket clientSocket, Server server) {
         this.clientSocket = clientSocket;
+        this.server = server;
     }
 
     @Override
@@ -21,15 +23,11 @@ public class ClientHandler implements Runnable {
         try {
             in = new DataInputStream(clientSocket.getInputStream());
             out = new DataOutputStream(clientSocket.getOutputStream());
-            while (true) {
+            while (server.isServerActive()) {
                 try {
                     Thread.sleep(500);
-                    if (!ServerConsole.isServerActive()) {
-                        break;
-                    }
                     String str = in.readUTF();
                     if (str.contains("/end")) {
-                        out.writeUTF("Приходите к нам еще:)");
                         break;
                     }
                     if (str.isEmpty()) {
@@ -47,6 +45,7 @@ public class ClientHandler implements Runnable {
             e.printStackTrace();
         } finally {
             closeConnection();
+            System.out.println("Клиент завершил свою работу");
         }
     }
 
@@ -55,12 +54,22 @@ public class ClientHandler implements Runnable {
     }
 
     public void closeConnection() {
+        server.removeClient(this);
         try {
             in.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
             out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
             clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 }
+

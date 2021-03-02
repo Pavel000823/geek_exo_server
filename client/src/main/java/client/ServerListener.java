@@ -2,7 +2,6 @@ package client;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.UTFDataFormatException;
 import java.net.Socket;
 
 public class ServerListener implements Runnable {
@@ -18,15 +17,15 @@ public class ServerListener implements Runnable {
     public void run() {
         try {
             in = new DataInputStream(socket.getInputStream());
-            while (true) {
-                try {
-                    String dataFromServer = in.readUTF();
-                    System.out.println(dataFromServer);
-                } catch (UTFDataFormatException e) {
-                    System.out.println("Что то пошло не так");
+            while (ClientApp.end) {
+                    if (in.available() > 0) {
+                        String dataFromServer = in.readUTF();
+                        System.out.println(dataFromServer);
+                    }
+                    Thread.sleep(1000);
                 }
-            }
-        } catch (IOException e) {
+
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
     }

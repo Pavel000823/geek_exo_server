@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Server {
-
+    private boolean isActive = true;
     public final String SERVER_HOST;
     public final int SERVER_PORT;
     private List<ClientHandler> clients = new ArrayList<>();
@@ -24,20 +24,14 @@ public class Server {
 
 
     public void start() {
-
         try (ServerSocket serverSocket = new ServerSocket(SERVER_PORT)) {
             System.out.println("Сервер запущен");
-            ServerConsole console = new ServerConsole(clients);
+            ServerConsole console = new ServerConsole(clients, this);
             // запускаем консоль сервера в 1 поток, где будут отправляться сообщения всем клиентам, которые к нам подключились
             new Thread(console).start();
-            while (true) {
+            while (isServerActive()) {
                 Socket socket = serverSocket.accept();
-                if (!ServerConsole.isServerActive()) {
-                    console.sendMessage("Сервер завершает свою работу. Приходите к нам еще:)");
-                    System.out.println("Сервер завершает работу");
-                    break;
-                }
-                ClientHandler clientHandler = new ClientHandler(socket);
+                ClientHandler clientHandler = new ClientHandler(socket, this);
                 clients.add(clientHandler);
                 new Thread(clientHandler).start();
                 System.out.println("Клиент подключен");
@@ -46,11 +40,20 @@ public class Server {
             System.out.println("Что то пошло не так");
             e.printStackTrace();
         } finally {
-            closeAllConnections();
+            System.out.println("Сервер завершает работу");
+            closeAllClientConnections();
         }
     }
 
-    private void closeAllConnections() {
+    public boolean isServerActive() {
+        return isActive;
+    }
+
+    public void removeClient(ClientHandler client) {
+        clients.remove(client);
+    }
+
+    private void closeAllClientConnections() {
         for (ClientHandler client : clients) {
             client.closeConnection();
             clients.remove(client);
