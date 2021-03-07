@@ -1,16 +1,17 @@
 package exoServer;
 
-import java.io.IOException;
-import java.util.List;
+import services.ClientHandler;
+
+import java.util.Map;
 import java.util.Scanner;
 
 public class ServerConsole implements Runnable {
 
-    private Scanner in = new Scanner(System.in);
-    private List<ClientHandler> clients;
-    private Server server;
+    private final Scanner in = new Scanner(System.in);
+    private final Map<String, ClientHandler> clients;
+    private final Server server;
 
-    public ServerConsole(List<ClientHandler> clients, Server server) {
+    public ServerConsole(Map<String, ClientHandler> clients, Server server) {
         this.clients = clients;
         this.server = server;
     }
@@ -23,18 +24,14 @@ public class ServerConsole implements Runnable {
                 continue;
             }
             if (!clients.isEmpty()) {
-                sendMessage(command);
+                sendMessageAllClients(command);
             } else System.out.println("Некому отправлять месседж");
         }
     }
 
-    public void sendMessage(String message) {
-        for (ClientHandler client : clients) {
-            try {
-                client.getOut().writeUTF(message);
-            } catch (IOException e) {
-                System.out.println("Потеряно соединение с клиентом");
-            }
+    private void sendMessageAllClients(String message) {
+        for (String client : clients.keySet()) {
+            clients.get(client).write(" [" + server.getServerName() + "] : " + message);
         }
     }
 }

@@ -6,27 +6,33 @@ import java.net.Socket;
 
 public class ServerListener implements Runnable {
 
-    private Socket socket;
+    private final Socket socket;
+    private final Chat chat;
     private DataInputStream in;
 
-    public ServerListener(Socket socket) {
+    public ServerListener(Socket socket, Chat chat) {
         this.socket = socket;
+        this.chat = chat;
     }
 
+    // ждем ответ от сервера, если есть то выводим на экран
     @Override
     public void run() {
         try {
             in = new DataInputStream(socket.getInputStream());
-            while (ClientApp.end) {
-                    if (in.available() > 0) {
-                        String dataFromServer = in.readUTF();
-                        System.out.println(dataFromServer);
-                    }
-                    Thread.sleep(1000);
-                }
-
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            while (Chat.isEnd) {
+                String dataFromServer = in.readUTF();
+                chat.addMessageForClient(dataFromServer);
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException | IOException e) {
+            chat.addMessageForClient("Соединение разорвано");
+        } finally {
+            try {
+                in.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
