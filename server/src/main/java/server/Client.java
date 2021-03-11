@@ -1,4 +1,4 @@
-package exoServer;
+package server;
 
 import services.ClientHandler;
 
@@ -16,6 +16,7 @@ public class Client implements ClientHandler, Runnable {
     private final Server server;
     private String nickName;
     private int authCount = 0;
+    private boolean isAuthorization = false;
 
     public Client(Socket clientSocket, Server server) {
         this.clientSocket = clientSocket;
@@ -29,7 +30,7 @@ public class Client implements ClientHandler, Runnable {
             out = new DataOutputStream(clientSocket.getOutputStream());
             write(server.getAuthMessage());
 
-            if (!isAuthorization()) {
+            if (!isAuthorizationClient()) {
                 return;
             }
             write(server.getWelcomeMessage(nickName));
@@ -84,11 +85,17 @@ public class Client implements ClientHandler, Runnable {
     }
 
 
-    private boolean isAuthorization() throws IOException {
+    private boolean isAuthorizationClient() throws IOException {
+
+        TimeOutHandler timeOutHandler = new TimeOutHandler(this,120);
+        Thread thread = new Thread(timeOutHandler);
+        thread.start();
+
         while (true) {
             try {
                 if (authCount > 4) {
                     out.writeUTF("Превышено количество попыток авторизации, попробуйте позднее");
+                    timeOutHandler.setErrorFlag(true);
                     return false;
                 }
                 String str = in.readUTF().trim();
@@ -103,12 +110,22 @@ public class Client implements ClientHandler, Runnable {
                     authCount++;
                     continue;
                 }
+                setIsAuthorization(true);
                 return true;
             } catch (RuntimeException e) {
                 out.writeUTF("Неверный формат команды /auth");
                 authCount++;
             }
         }
+    }
+
+    private void setIsAuthorization(boolean isAuthorization) {
+        this.isAuthorization = isAuthorization;
+    }
+
+    @Override
+    public boolean isAuthorization() {
+        return isAuthorization;
     }
 
     private String getFormattedMessage(String message) {

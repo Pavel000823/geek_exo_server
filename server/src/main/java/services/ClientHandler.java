@@ -7,4 +7,6 @@ public interface ClientHandler {
     String getName();
 
     void closeConnection();
+
+    boolean isAuthorization();
 }

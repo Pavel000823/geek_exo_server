@@ -1,4 +1,4 @@
-package exoServer;
+package server;
 
 import services.ClientHandler;
 
@@ -81,6 +81,7 @@ public class Server {
         return serverCommands.toString();
     }
 
+    // вынести проверку и парсинг по клиенту на уровень handler ?????
     public synchronized void sendMessageForClient(String message, ClientHandler client) {
         try {
             message = message.replaceAll("/w", "");

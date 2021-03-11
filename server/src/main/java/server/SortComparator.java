@@ -1,4 +1,4 @@
-package exoServer;
+package server;
 
 import java.util.Comparator;
 
