@@ -1,6 +1,7 @@
 package server;
 
 import services.ClientHandler;
+import services.MessengerServer;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -9,16 +10,16 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 
-public class Client implements ClientHandler, Runnable {
+public class Client implements ClientHandler {
     private final Socket clientSocket;
     private DataInputStream in;
     private DataOutputStream out;
-    private final Server server;
+    private final MessengerServer server;
     private String nickName;
     private int authCount = 0;
     private boolean isAuthorization = false;
 
-    public Client(Socket clientSocket, Server server) {
+    public Client(Socket clientSocket, MessengerServer server) {
         this.clientSocket = clientSocket;
         this.server = server;
     }
@@ -84,10 +85,61 @@ public class Client implements ClientHandler, Runnable {
         }
     }
 
+    @Override
+    public void write(String message) {
+        try {
+            out.writeUTF(message);
+        } catch (IOException e) {
+            System.out.println(nickName + " disconnected");
+        }
+    }
+
+    @Override
+    public void closeConnection() {
+        server.removeClient(nickName);
+        try {
+            in.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            clientSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public String getName() {
+        return nickName;
+    }
+
+    @Override
+    public boolean isAuthorization() {
+        return isAuthorization;
+    }
+
+    private void setIsAuthorization(boolean isAuthorization) {
+        this.isAuthorization = isAuthorization;
+    }
+
+    private String getFormattedMessage(String message) {
+        return "[" + getName() + "] : " + message;
+    }
 
     private boolean isAuthorizationClient() throws IOException {
 
-        TimeOutHandler timeOutHandler = new TimeOutHandler(this,120);
+        TimeOutHandler timeOutHandler = new TimeOutHandler(this, Server.SERVER_AUTHORIZATION_TIMEOUT);
         Thread thread = new Thread(timeOutHandler);
         thread.start();
 
@@ -117,58 +169,6 @@ public class Client implements ClientHandler, Runnable {
                 authCount++;
             }
         }
-    }
-
-    private void setIsAuthorization(boolean isAuthorization) {
-        this.isAuthorization = isAuthorization;
-    }
-
-    @Override
-    public boolean isAuthorization() {
-        return isAuthorization;
-    }
-
-    private String getFormattedMessage(String message) {
-        return "[" + getName() + "] : " + message;
-    }
-
-    @Override
-    public void closeConnection() {
-        server.removeClient(nickName);
-        try {
-            in.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            out.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            clientSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void write(String message) {
-        try {
-            out.writeUTF(message);
-        } catch (IOException e) {
-            System.out.println(nickName + " disconnected");
-        }
-    }
-
-    @Override
-    public String getName() {
-        return nickName;
     }
 }
 

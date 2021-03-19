@@ -1,6 +1,6 @@
 package services;
 
-public interface ClientHandler {
+public interface ClientHandler extends Runnable {
 
     void write(String msg);
 

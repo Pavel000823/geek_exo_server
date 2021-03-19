@@ -1,6 +1,7 @@
 package server;
 
 import services.ClientHandler;
+import services.MessengerServer;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -10,9 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Server {
+public class Server implements MessengerServer {
+
     public final String SERVER_HOST;
     public final int SERVER_PORT;
+    public static final int SERVER_AUTHORIZATION_TIMEOUT = 120;
     private boolean isActive = true;
     private final Map<String, ClientHandler> clients = new HashMap<>();
     private static final HashMap<String, String> allCommands = new HashMap<>();
@@ -23,6 +26,7 @@ public class Server {
         allCommands.put("/end", "выйти из чата");
         allCommands.put("/w", "отправить личное сообщение - пример (/w nickname Привет)");
         allCommands.put("/list", "Список всех участников");
+        allCommands.put("/rename", "Изменить имя");
     }
 
     public static void main(String[] args) {
@@ -36,7 +40,6 @@ public class Server {
         initializationServerCommands();
     }
 
-
     public void start() {
         try (ServerSocket serverSocket = new ServerSocket(SERVER_PORT)) {
             System.out.println("server started");
@@ -46,7 +49,7 @@ public class Server {
             while (isServerActive()) {
                 // ждем клиента - слушатель
                 Socket socket = serverSocket.accept();
-                Client client = new Client(socket, this);
+                ClientHandler client = new Client(socket, this);
                 new Thread(client).start();
                 System.out.println("client connected");
             }
@@ -59,29 +62,24 @@ public class Server {
         }
     }
 
+    @Override
     public boolean isServerActive() {
         return isActive;
     }
 
-    public String getServerName() {
-        return "server";
-    }
-
+    @Override
     public synchronized void removeClient(String client) {
         clients.remove(client);
     }
 
+    @Override
     public synchronized void sendMessageAllClients(String message) {
         for (String client : clients.keySet()) {
             clients.get(client).write(message);
         }
     }
 
-    public String getServerCommands() {
-        return serverCommands.toString();
-    }
-
-    // вынести проверку и парсинг по клиенту на уровень handler ?????
+    @Override
     public synchronized void sendMessageForClient(String message, ClientHandler client) {
         try {
             message = message.replaceAll("/w", "");
@@ -99,15 +97,17 @@ public class Server {
         }
     }
 
+    @Override
     public void addClient(String nickName, Client client) {
         clients.put(nickName, client);
     }
 
+    @Override
     public boolean isContainsNickName(String nickName) {
         return clients.containsKey(nickName);
     }
 
-
+    @Override
     public String getClientsNames() {
         StringBuilder builder = new StringBuilder();
         builder.append("Список участников:" + "\n");
@@ -119,13 +119,25 @@ public class Server {
         return builder.toString();
     }
 
+    @Override
     public String getWelcomeMessage(String nickName) {
         return "Приветствуем Вас в нашем чате, " + nickName + "\n" + getServerCommands();
     }
 
+    @Override
     public String getAuthMessage() {
         return "Приветствуем Вас в нашем чате. Для авторизации введите ваш никнейм в поле ввода в формате \n" +
                 " /auth nickname и нажмите Enter";
+    }
+
+    @Override
+    public String getServerName() {
+        return "Chat_server";
+    }
+
+    @Override
+    public String getServerCommands() {
+        return serverCommands.toString();
     }
 
     private void initializationServerCommands() {
