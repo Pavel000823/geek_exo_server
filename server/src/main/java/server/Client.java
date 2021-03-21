@@ -17,7 +17,13 @@ public class Client implements ClientHandler {
     private final MessengerServer server;
     private String nickName;
     private int authCount = 0;
+    private final int maxAuthCount = 10;
     private boolean isAuthorization = false;
+    private final int PASSWORD_MIN_LENGTH = 5;
+    private final int LOGIN_MIN_LENGTH = 5;
+    private final int PASSWORD_MAX_LENGTH = 20;
+    private final int LOGIN_MAX_LENGTH = 20;
+
 
     public Client(Socket clientSocket, MessengerServer server) {
         this.clientSocket = clientSocket;
@@ -47,23 +53,27 @@ public class Client implements ClientHandler {
                     }
                     // переписать, вынести
                     if (message.startsWith("/")) {
-                        if (message.startsWith("/w")) {
-                            out.writeUTF(message);
+                        if (message.startsWith(Server.SEND_MESSAGE)) {
+                            write(message);
                             server.sendMessageForClient(message, this);
                             continue;
                         }
-                        if (message.startsWith("/ls")) { // enum
-                            out.writeUTF(message);
-                            out.writeUTF(server.getServerCommands());
+                        if (message.startsWith(Server.COMMANDS_LIST)) { // enum
+                            write(message);
+                            write(server.getServerCommands());
                             continue;
                         }
-                        if (message.startsWith("/end")) {
+                        if (message.startsWith(Server.EXIT)) {
                             System.out.println("disconnected");
                             break;
                         }
-                        if (message.startsWith("/list")) {
-                            out.writeUTF(message);
-                            out.writeUTF(server.getClientsNames());
+                        if (message.startsWith(Server.USER_LIST)) {
+                            write(message);
+                            write(server.getClientsNames());
+                            continue;
+                        }
+                        if (message.startsWith(Server.USER_RENAME)) {
+                            userRename(message);
                             continue;
                         }
                     }
@@ -138,6 +148,7 @@ public class Client implements ClientHandler {
     }
 
     private boolean isAuthorizationClient() throws IOException {
+        String command = "";
 
         TimeOutHandler timeOutHandler = new TimeOutHandler(this, Server.SERVER_AUTHORIZATION_TIMEOUT);
         Thread thread = new Thread(timeOutHandler);
@@ -145,30 +156,95 @@ public class Client implements ClientHandler {
 
         while (true) {
             try {
-                if (authCount > 4) {
-                    out.writeUTF("Превышено количество попыток авторизации, попробуйте позднее");
+                if (authCount > maxAuthCount) {
+                    write("Превышено количество попыток авторизации, попробуйте позднее");
                     timeOutHandler.setErrorFlag(true);
                     return false;
                 }
+
                 String str = in.readUTF().trim();
-                if (!str.startsWith("/auth")) {
-                    out.writeUTF("Неверный формат команды");
+                write(str);
+
+                if (!(str.startsWith(Server.AUTH) || str.startsWith(Server.REGISTRATION))) {
+                    write("Неверный формат команды");
                     authCount++;
                     continue;
                 }
-                nickName = str.split(" ")[1];
-                if (server.isContainsNickName(nickName)) {
-                    out.writeUTF("Уже есть клиент с таким ником");
+
+                String[] data = str.split(" ");
+                command = data[0];
+                nickName = data[1];
+                String password = data[2];
+
+                if (!checkNickName(nickName)) {
+                    write("Длинна никнейма должна быть от 5 до 20 символов");
+                    continue;
+                }
+                if (!checkPassword(password)) {
+                    write("Длинна пароля должна быть от 5 до 20 символов");
+                    continue;
+                }
+
+                if (command.equals(Server.AUTH)) {
+                    if (server.checkExistUser(nickName, password)) {
+                        setIsAuthorization(true);
+                        return true;
+                    }
+                    write("Неверный логин или пароль");
                     authCount++;
                     continue;
                 }
-                setIsAuthorization(true);
-                return true;
+                if (command.startsWith(Server.REGISTRATION)) {
+                    if (server.checkExistUser(nickName, password)) {
+                        write("Уже есть клиент с таким ником, придумайте другой");
+                        authCount++;
+                        continue;
+                    }
+                    server.addNewUser(nickName, password);
+                    write("Вы успешно зарегестрированны");
+                    setIsAuthorization(true);
+                    return true;
+                }
+
             } catch (RuntimeException e) {
-                out.writeUTF("Неверный формат команды /auth");
+                write("Неверный формат команды " + Server.REGISTRATION + " или " + Server.AUTH);
                 authCount++;
             }
         }
     }
+
+    private void userRename(String newNickName) throws IOException {
+        try {
+            String lastNickName = nickName;
+            String[] data = newNickName.split(" ");
+            String nick = data[1];
+            if (!checkNickName(nick)) {
+                write("Длинна никнейма должна быть от 5 до 20 символов");
+                return;
+            }
+            if (!server.checkExistUser(nick)) {
+                server.updateClient(nickName, nick);
+                this.nickName = nick;
+                server.removeClient(lastNickName);
+                server.addClient(nickName, this);
+                write("Вы успешно изменили ник");
+                return;
+            }
+        } catch (RuntimeException e) {
+            write("Неверный формат команды " + Server.USER_RENAME);
+        }
+        write("Уже есть клиент с таким никнеймом");
+    }
+
+    private boolean checkPassword(String password) {
+        int length = password.length();
+        return length >= PASSWORD_MIN_LENGTH && length <= PASSWORD_MAX_LENGTH;
+    }
+
+    private boolean checkNickName(String login) {
+        int length = login.length();
+        return length >= LOGIN_MIN_LENGTH && length <= LOGIN_MAX_LENGTH;
+    }
+
 }
 

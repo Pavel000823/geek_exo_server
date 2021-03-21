@@ -1,8 +1,6 @@
 package services;
 
-import server.Client;
-
-public interface MessengerServer {
+public interface MessengerServer extends ConsoleCommands {
 
     void removeClient(String client);
 
@@ -10,9 +8,13 @@ public interface MessengerServer {
 
     void sendMessageForClient(String message, ClientHandler client);
 
-    void addClient(String nickName, Client client);
+    void addClient(String nickName, ClientHandler client);
 
-    boolean isContainsNickName(String nickName);
+    void updateClient(String lastNickName, String newNickName);
+
+    boolean checkExistUser(String nickName);
+
+    boolean checkExistUser(String nickName, String password);
 
     boolean isServerActive();
 
@@ -25,4 +27,6 @@ public interface MessengerServer {
     String getServerName();
 
     String getAuthMessage();
+
+    void addNewUser(String nickName, String password);
 }

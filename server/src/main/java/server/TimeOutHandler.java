@@ -5,16 +5,12 @@ import services.ClientHandler;
 public class TimeOutHandler implements Runnable {
 
     private final ClientHandler client;
-    private int seconds = 120;
+    private int seconds;
     private boolean errorFlag = false;
 
     public TimeOutHandler(ClientHandler client, int seconds) {
         this.client = client;
         this.seconds = seconds;
-    }
-
-    public TimeOutHandler(ClientHandler client) {
-        this.client = client;
     }
 
     @Override
@@ -35,6 +31,7 @@ public class TimeOutHandler implements Runnable {
         }
         if (!client.isAuthorization() && !errorFlag) {
             client.write("Превышено время ожидания. Вы отключены от сервера");
+            client.write("/end");
             client.closeConnection();
         }
     }

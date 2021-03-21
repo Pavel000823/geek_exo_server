@@ -24,15 +24,12 @@ public class Chat extends JFrame {
 
     private JTextArea messageArea;
     private JTextField inputField;
-    private JTextField nickNameField;
     private ServerListener serverListener;
 
 
     // создаем наши панели
     private void initializationPanels() {
         setInputMessageFiled();
-//        setNickNameField();
-//        setButtons();
         setArea();
     }
 
