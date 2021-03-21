@@ -101,7 +101,7 @@ public class Server implements MessengerServer {
     }
 
     @Override
-    public void addClient(String nick, ClientHandler client) {
+    public synchronized void addClient(String nick, ClientHandler client) {
         clients.put(nick, client);
     }
 
