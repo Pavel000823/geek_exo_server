@@ -1,16 +1,22 @@
 package server;
 
-import db.DataBaseExecutor;
+
+import db.DataBaseInit;
 import services.ClientHandler;
-import services.DBExecutor;
+import services.DBConnection;
 import services.MessengerServer;
 import util.SortComparator;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Server implements MessengerServer {
 
@@ -22,7 +28,7 @@ public class Server implements MessengerServer {
     private final Map<String, ClientHandler> clients = new HashMap<>();
     private static final HashMap<String, String> allCommands = new HashMap<>();
     private final StringBuilder serverCommands = new StringBuilder();
-    private DBExecutor executor;
+    private DBConnection connection;
 
     public static void main(String[] args) {
         Server server = new Server("localhost", 8181);
@@ -40,7 +46,7 @@ public class Server implements MessengerServer {
             System.out.println("server started");
 
             // подключаемся к бд и инициализируем ее при необходимости
-            executor = new DataBaseExecutor();
+            connection = new DataBaseInit();
 
             ServerConsole console = new ServerConsole(clients, this);
             // запускаем консоль сервера в 1 поток, где будут отправляться сообщения всем клиентам, которые к нам подключились
@@ -61,7 +67,7 @@ public class Server implements MessengerServer {
         } finally {
             System.out.println("server stopped");
             closeAllClientConnections();
-            executor.closeConnection();
+            connection.closeConnection();
         }
     }
 
@@ -107,8 +113,10 @@ public class Server implements MessengerServer {
 
     @Override
     public synchronized void updateClient(String lastNick, String newNick) {
-        try {
-            executor.execute("update users set name = '" + newNick + "' where name = '" + lastNick + "'");
+        try (PreparedStatement preparedStatement = connection.getConnection().prepareStatement("update users set name = ? where name = ?")) {
+            preparedStatement.setString(1, newNick);
+            preparedStatement.setString(2, lastNick);
+            preparedStatement.executeUpdate();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }
@@ -116,8 +124,10 @@ public class Server implements MessengerServer {
 
     @Override
     public boolean checkExistUser(String nickName) {
-        try {
-            return executor.isResult("select * from users where name = '" + nickName + "';");
+        try (PreparedStatement preparedStatement = connection.getConnection().prepareStatement("select * from users where name = ?;")) {
+            preparedStatement.setString(1, nickName);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return checkResult(resultSet);
         } catch (SQLException throwable) {
             System.out.println("Произошла ошибка при выполнении запроса " + throwable.getMessage());
             return false;
@@ -126,8 +136,11 @@ public class Server implements MessengerServer {
 
     @Override
     public boolean checkExistUser(String nickName, String password) {
-        try {
-            return executor.isResult("select * from users where name = '" + nickName + "' and password = '" + password + "';");
+        try (PreparedStatement preparedStatement = connection.getConnection().prepareStatement("select * from users where name = ? and password = ?;")) {
+            preparedStatement.setString(1, nickName);
+            preparedStatement.setString(2,password);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return checkResult(resultSet);
         } catch (SQLException throwable) {
             System.out.println("Произошла ошибка при выполнении запроса " + throwable.getMessage());
             return false;
@@ -136,8 +149,10 @@ public class Server implements MessengerServer {
 
     @Override
     public synchronized void addNewUser(String nickName, String password) {
-        try {
-            executor.execute("INSERT INTO 'users' ('name', 'password') VALUES ('" + nickName + "', '" + password + "');");
+        try (PreparedStatement preparedStatement = connection.getConnection().prepareStatement("INSERT INTO 'users' ('name', 'password') VALUES (?, ?);")) {
+            preparedStatement.setString(1, nickName);
+            preparedStatement.setString(2, password);
+            preparedStatement.executeUpdate();
         } catch (SQLException throwable) {
             System.out.println("Произошла ошибка при выполнении запроса " + throwable.getMessage());
         }
@@ -197,5 +212,13 @@ public class Server implements MessengerServer {
             clients.get(client).closeConnection();
             clients.remove(client);
         }
+    }
+
+    private boolean checkResult(ResultSet resultSet) throws SQLException {
+        int size = 0;
+        while (resultSet.next()) {
+            size++;
+        }
+        return size > 0;
     }
 }

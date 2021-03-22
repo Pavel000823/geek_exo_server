@@ -1,11 +1,11 @@
 package db;
 
 
-import services.DBExecutor;
+import services.DBConnection;
 
 import java.sql.*;
 
-public class DataBaseExecutor implements DBExecutor {
+public class DataBaseInit implements DBConnection {
 
     public static final String DATA_BASE_NAME = "messenger";
     private static Connection connection;
@@ -29,7 +29,7 @@ public class DataBaseExecutor implements DBExecutor {
 
     private static Connection getConnectionInstance() throws SQLException {
         if (connection == null) {
-            connection = DriverManager.getConnection("jdbc:sqlite:" + DataBaseExecutor.DATA_BASE_NAME + ".s2db");
+            connection = DriverManager.getConnection("jdbc:sqlite:" + DataBaseInit.DATA_BASE_NAME + ".s2db");
         }
         return connection;
     }
@@ -41,37 +41,14 @@ public class DataBaseExecutor implements DBExecutor {
     }
 
     @Override
-    public boolean isResult(String query) throws SQLException {
-        int size = 0;
-        try (Statement statement = getConnectionInstance().createStatement()) {
-            statement.execute(query);
-            ResultSet resultSet = statement.getResultSet();
-            while (resultSet.next()) {
-                size++;
-            }
-        }
-        return size > 0;
+    public Connection getConnection() {
+        return connection;
     }
-
-    @Override
-    public void execute(String query) throws SQLException {
-        try (Statement statement = getConnectionInstance().createStatement()) {
-            statement.executeUpdate(query);
-        }
-    }
-
-    @Override
-    public ResultSet getResult(String query) throws SQLException {
-        try (Statement statement = getConnectionInstance().createStatement()) {
-            return statement.executeQuery(query);
-        }
-    }
-
 
     @Override
     public void closeConnection() {
         try {
-            connection.close();
+            getConnectionInstance().close();
         } catch (SQLException throwables) {
             throwables.printStackTrace();
         }

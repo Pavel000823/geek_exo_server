@@ -54,12 +54,12 @@ public class Client implements ClientHandler {
                     // переписать, вынести
                     if (message.startsWith("/")) {
                         if (message.startsWith(Server.SEND_MESSAGE)) {
-                            write(message);
+                            write(getFormattedMessage(message));
                             server.sendMessageForClient(message, this);
                             continue;
                         }
                         if (message.startsWith(Server.COMMANDS_LIST)) { // enum
-                            write(message);
+                            write(getFormattedMessage(message));
                             write(server.getServerCommands());
                             continue;
                         }
@@ -68,7 +68,7 @@ public class Client implements ClientHandler {
                             break;
                         }
                         if (message.startsWith(Server.USER_LIST)) {
-                            write(message);
+                            write(getFormattedMessage(message));
                             write(server.getClientsNames());
                             continue;
                         }
