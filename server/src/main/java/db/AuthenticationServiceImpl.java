@@ -1,5 +1,6 @@
 package db;
 
+import services.AuthenticationService;
 import services.DBConnection;
 
 import java.sql.PreparedStatement;
