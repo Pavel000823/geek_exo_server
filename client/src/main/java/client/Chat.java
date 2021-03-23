@@ -1,6 +1,7 @@
 package client;
 
 import client.actions.SendMessageAction;
+import client.services.ChatService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,29 +13,21 @@ import java.io.IOException;
 import java.net.Socket;
 
 
-public class Chat extends JFrame {
+public class Chat extends JFrame implements ChatService {
 
     private static final String SERVER_ADDRESS = "localhost";
     private static final int SERVER_PORT = 8181;
-    public static boolean isEnd = true;
+    public boolean exit = true;
     private DataInputStream in;
     private DataOutputStream out;
     private Socket socket;
 
+    private String nickname = "";
+
 
     private JTextArea messageArea;
     private JTextField inputField;
-    private JTextField nickNameField;
-    private ServerListener serverListener;
 
-
-    // создаем наши панели
-    private void initializationPanels() {
-        setInputMessageFiled();
-//        setNickNameField();
-//        setButtons();
-        setArea();
-    }
 
     // создаем окно
     public void start() {
@@ -43,12 +36,7 @@ public class Chat extends JFrame {
         addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent evt) {
                 System.out.println("Соединение разорвано");
-                isEnd = false;
-                try {
-                    write("/end");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                exit = !exit;
                 closeAllConnections();
                 exit();
             }
@@ -58,6 +46,42 @@ public class Chat extends JFrame {
         initializationPanels();
         setVisible(true);
         connection();
+    }
+
+    @Override
+    public void sendMessage(String message) throws IOException {
+        out.writeUTF(message);
+    }
+
+    public void clearInputField() {
+        inputField.setText("");
+    }
+
+    @Override
+    public void addMessageForClient(String message) {
+        messageArea.append(message + "\n");
+    }
+
+    @Override
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    @Override
+    public String getNickName() {
+        return nickname;
+    }
+
+    @Override
+    public String getInputFieldText() {
+        return inputField.getText();
+    }
+
+
+    // создаем наши панели
+    private void initializationPanels() {
+        setInputMessageFiled();
+        setArea();
     }
 
     // надстройка тектовой области
@@ -95,22 +119,6 @@ public class Chat extends JFrame {
         setBounds(0, 0, screenWidth / 3, screenHeight / 3);
     }
 
-    private JTextArea getMessageArea() {
-        return messageArea;
-    }
-
-    public JTextField getInputField() {
-        return inputField;
-    }
-
-    public void write(String message) throws IOException {
-        out.writeUTF(message);
-    }
-
-    public void addMessageForClient(String message) {
-        getMessageArea().append(message + "\n");
-    }
-
     private void closeAllConnections() {
         try {
             out.flush();
@@ -141,7 +149,7 @@ public class Chat extends JFrame {
             out = new DataOutputStream(socket.getOutputStream());
 
             // запускаем слушатель в отдельный поток
-            serverListener = new ServerListener(socket, this);
+            Runnable serverListener = new ServerListener(socket, this);
             Thread thread = new Thread(serverListener);
             thread.start();
 
@@ -154,6 +162,11 @@ public class Chat extends JFrame {
                 interruptedException.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public boolean isExit() {
+        return exit;
     }
 
     private void exit() {

@@ -1,6 +1,7 @@
-package exoServer;
+package server;
 
 import services.ClientHandler;
+import services.MessengerServer;
 
 import java.util.Map;
 import java.util.Scanner;
@@ -9,9 +10,9 @@ public class ServerConsole implements Runnable {
 
     private final Scanner in = new Scanner(System.in);
     private final Map<String, ClientHandler> clients;
-    private final Server server;
+    private final MessengerServer server;
 
-    public ServerConsole(Map<String, ClientHandler> clients, Server server) {
+    public ServerConsole(Map<String, ClientHandler> clients, MessengerServer server) {
         this.clients = clients;
         this.server = server;
     }
