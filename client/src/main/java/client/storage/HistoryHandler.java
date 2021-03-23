@@ -18,12 +18,12 @@ public class HistoryHandler implements HistoryService {
 
     public HistoryHandler(String username) {
         this.username = username;
-        HISTORY_LENGTH = 50;
+        HISTORY_LENGTH = 100;
     }
 
-    @Override
+
     public void writeHistory(String history) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getFile(username)))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(getFile(username), true))) {
             writer.write(history);
         } catch (IOException e) {
             System.out.println("Не удалось записать историю в файл локальной истории");

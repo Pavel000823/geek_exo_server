@@ -187,8 +187,9 @@ public class Client implements ClientHandler {
                 if (command.equals(Server.AUTH)) {
                     if (server.getAuthService().checkUser(nickName, password)) {
                         setIsAuthorization(true);
-                        sendTechDataForClient();
                         write("Вы успешно авторизованы");
+                        sendTechDataForClient();
+
                         return true;
                     }
                     write("Неверный логин или пароль");
