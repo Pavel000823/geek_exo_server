@@ -186,8 +186,9 @@ public class Client implements ClientHandler {
                 }
 
                 if (command.equals(Server.AUTH)) {
-                    if (server.checkExistUser(nickName, password)) {
+                    if (server.getAuthService().checkUser(nickName, password)) {
                         setIsAuthorization(true);
+                        sendTechDataForClient();
                         return true;
                     }
                     write("Неверный логин или пароль");
@@ -195,12 +196,13 @@ public class Client implements ClientHandler {
                     continue;
                 }
                 if (command.startsWith(Server.REGISTRATION)) {
-                    if (server.checkExistUser(nickName, password)) {
+                    if (server.getAuthService().checkUser(nickName, password)) {
                         write("Уже есть клиент с таким ником, придумайте другой");
                         authCount++;
                         continue;
                     }
-                    server.addNewUser(nickName, password);
+                    server.getAuthService().addUser(nickName, password);
+                    sendTechDataForClient();
                     write("Вы успешно зарегестрированны");
                     setIsAuthorization(true);
                     return true;
@@ -222,8 +224,8 @@ public class Client implements ClientHandler {
                 write("Длинна никнейма должна быть от 5 до 20 символов");
                 return;
             }
-            if (!server.checkExistUser(nick)) {
-                server.updateClient(nickName, nick);
+            if (!server.getAuthService().checkUser(nick)) {
+                server.getAuthService().updateClient(nickName, nick);
                 this.nickName = nick;
                 server.removeClient(lastNickName);
                 server.addClient(nickName, this);
@@ -244,6 +246,10 @@ public class Client implements ClientHandler {
     private boolean checkNickName(String login) {
         int length = login.length();
         return length >= LOGIN_MIN_LENGTH && length <= LOGIN_MAX_LENGTH;
+    }
+
+    private void sendTechDataForClient() {
+        write("/true " + nickName);
     }
 
 }

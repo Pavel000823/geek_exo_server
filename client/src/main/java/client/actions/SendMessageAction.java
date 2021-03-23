@@ -1,29 +1,29 @@
 package client.actions;
 
-import client.Chat;
+import client.services.ChatService;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.IOException;
 
 public class SendMessageAction implements KeyListener {
-    private final Chat chat;
+    private final ChatService chatService;
 
-    public SendMessageAction(Chat chat) {
-        this.chat = chat;
+    public SendMessageAction(ChatService chatService) {
+        this.chatService = chatService;
     }
 
     private void sendMessage() {
-            String message = chat.getInputField().getText();
+            String message = chatService.getInputFieldText();
             if (message.isEmpty()) {
-                chat.addMessageForClient("Поле не может быть пустым");
+                chatService.addMessageForClient("Поле не может быть пустым");
                 return;
             }
-            chat.getInputField().setText("");
+            chatService.clearInputField();
             try {
-                chat.write(message);
+                chatService.sendMessage(message);
             } catch (IOException e) {
-                chat.addMessageForClient("Не удалось отправить сообщение. Попробуйте еще раз");
+                chatService.addMessageForClient("Не удалось отправить сообщение. Попробуйте еще раз");
             }
         }
 

@@ -1,5 +1,7 @@
 package services;
 
+import db.AuthenticationService;
+
 public interface MessengerServer extends ConsoleCommands {
 
     void removeClient(String client);
@@ -9,12 +11,6 @@ public interface MessengerServer extends ConsoleCommands {
     void sendMessageForClient(String message, ClientHandler client);
 
     void addClient(String nickName, ClientHandler client);
-
-    void updateClient(String lastNickName, String newNickName);
-
-    boolean checkExistUser(String nickName);
-
-    boolean checkExistUser(String nickName, String password);
 
     boolean isServerActive();
 
@@ -28,5 +24,5 @@ public interface MessengerServer extends ConsoleCommands {
 
     String getAuthMessage();
 
-    void addNewUser(String nickName, String password);
+    AuthenticationService getAuthService();
 }

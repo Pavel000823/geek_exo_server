@@ -1,5 +1,7 @@
 package client;
 
+import client.services.ChatService;
+
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -7,32 +9,38 @@ import java.net.Socket;
 public class ServerListener implements Runnable {
 
     private final Socket socket;
-    private final Chat chat;
-    private DataInputStream in;
+    private final ChatService chatService;
 
-    public ServerListener(Socket socket, Chat chat) {
+    public ServerListener(Socket socket, ChatService chatService) {
         this.socket = socket;
-        this.chat = chat;
+        this.chatService = chatService;
     }
 
     // ждем ответ от сервера, если есть то выводим на экран
     @Override
     public void run() {
-        try {
-            in = new DataInputStream(socket.getInputStream());
-            while (Chat.isEnd) {
+        try (DataInputStream in = new DataInputStream(socket.getInputStream())) {
+            isAuthorization(in);
+            while (chatService.isExit()) {
                 String dataFromServer = in.readUTF();
-                chat.addMessageForClient(dataFromServer);
+                chatService.addMessageForClient(dataFromServer);
                 Thread.sleep(1000);
             }
         } catch (InterruptedException | IOException e) {
-            chat.addMessageForClient("Соединение разорвано");
-        } finally {
-            try {
-                in.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            chatService.addMessageForClient("Соединение разорвано");
+        }
+    }
+
+    public void isAuthorization(DataInputStream in) throws IOException {
+        while (true) {
+            String data = in.readUTF();
+            if (data.startsWith("/true")) {//контракт который установлен с сервером на событие успешной авторизации.Сервер обязуется отдать в
+                //    случае авторизации клиентом / true никнейм
+                String nickname = data.split(" ")[1];
+                chatService.setNickname(nickname);
+                return;
             }
+            chatService.addMessageForClient(data);
         }
     }
 }
