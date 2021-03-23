@@ -98,7 +98,7 @@ public class Server implements MessengerServer {
             String localMessage = data[1];
             if (clients.containsKey(nickName)) {
                 ClientHandler clientOut = clients.get(nickName);
-                clientOut.write("ls - [" + client.getName() + "] :" + localMessage);
+                clientOut.write("ls - [" + client.getName() + "] : " + localMessage);
                 return;
             }
             client.write("Нет получателя с ником " + nickName + ", либо он вышел из чата");

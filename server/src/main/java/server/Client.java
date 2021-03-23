@@ -40,7 +40,6 @@ public class Client implements ClientHandler {
             if (!isAuthorizationClient()) {
                 return;
             }
-            write(server.getWelcomeMessage(nickName));
             // добавляем клиента в список клиентов
             server.addClient(nickName, this);
 
@@ -189,6 +188,7 @@ public class Client implements ClientHandler {
                     if (server.getAuthService().checkUser(nickName, password)) {
                         setIsAuthorization(true);
                         sendTechDataForClient();
+                        write("Вы успешно авторизованы");
                         return true;
                     }
                     write("Неверный логин или пароль");
@@ -201,9 +201,11 @@ public class Client implements ClientHandler {
                         authCount++;
                         continue;
                     }
-                    server.getAuthService().addUser(nickName, password);
+
                     sendTechDataForClient();
+                    write(server.getWelcomeMessage(nickName));
                     write("Вы успешно зарегестрированны");
+                    server.getAuthService().addUser(nickName, password);
                     setIsAuthorization(true);
                     return true;
                 }

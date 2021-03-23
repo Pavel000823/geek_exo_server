@@ -68,11 +68,6 @@ public class Chat extends JFrame implements ChatService {
     }
 
     @Override
-    public String getNickName() {
-        return nickname;
-    }
-
-    @Override
     public String getInputFieldText() {
         return inputField.getText();
     }
