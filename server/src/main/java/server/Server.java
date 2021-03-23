@@ -1,7 +1,7 @@
 package server;
 
 
-import db.AuthenticationService;
+import services.AuthenticationService;
 import db.AuthenticationServiceImpl;
 import db.DataBaseInit;
 import services.ClientHandler;
@@ -12,9 +12,6 @@ import util.SortComparator;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

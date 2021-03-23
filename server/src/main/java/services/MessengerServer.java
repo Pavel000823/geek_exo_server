@@ -1,7 +1,5 @@
 package services;
 
-import db.AuthenticationService;
-
 public interface MessengerServer extends ConsoleCommands {
 
     void removeClient(String client);
