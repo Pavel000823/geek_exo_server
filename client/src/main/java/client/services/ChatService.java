@@ -12,8 +12,6 @@ public interface ChatService {
 
     void setNickname(String nickname);
 
-    String getNickName();
-
     String getInputFieldText();
 
     boolean isExit();
